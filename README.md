@@ -45,6 +45,7 @@ Layer responsibilities and architectural rules are documented in [`docs/architec
 - [`docs/domain-model.md`](docs/domain-model.md) — initial domain model.
 - [`docs/services.md`](docs/services.md) — planned services and interfaces.
 - [`docs/roadmap.md`](docs/roadmap.md) — development phases.
+- [`docs/code-signing.md`](docs/code-signing.md) — Windows release signing and certificate security plan.
 
 ## Benchmark concept
 
