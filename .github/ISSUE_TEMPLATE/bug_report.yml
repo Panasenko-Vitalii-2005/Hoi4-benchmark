@@ -1,0 +1,44 @@
+name: Bug Report
+description: Report a reproducible bug.
+title: "[Bug]: "
+labels:
+  - bug
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug.
+
+  - type: input
+    id: version
+    attributes:
+      label: Application version
+      placeholder: v0.1.0
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics bundle or logs
+      description: Attach diagnostics ZIP or app.log if available.
