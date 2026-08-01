@@ -1,0 +1,397 @@
+<UserControl x:Class="HOI4Benchmark.App.Views.ResultsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+>
+    <Grid Margin="32">
+
+        <Grid.RowDefinitions>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="*"/>
+    <RowDefinition Height="300"/>
+</Grid.RowDefinitions>
+
+        <!-- Header -->
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Row="0">
+    <TextBlock
+        Text="{Binding Title}"
+        Style="{StaticResource PageTitleTextStyle}" />
+
+    <TextBlock
+        Margin="0,8,0,0"
+        Text="{Binding Subtitle}"
+        Style="{StaticResource PageSubtitleTextStyle}" />
+</StackPanel>
+
+            <Button Grid.Column="1"
+                    Width="110"
+                    Height="38"
+                    Content="Refresh"
+                    Command="{Binding RefreshCommand}"/>
+        </Grid>
+
+        <!-- Actions -->
+
+        <Border Grid.Row="1"
+                Margin="0,24,0,0"
+                Padding="16"
+                Background="#F7F8FA"
+                BorderBrush="#E4E8EE"
+                BorderThickness="1"
+                CornerRadius="8">
+
+            <StackPanel Orientation="Horizontal">
+                <Button Width="120"
+                        Height="38"
+                        Margin="0,0,10,0"
+                        Content="Selected JSON"
+                        Command="{Binding ExportJsonCommand}"/>
+
+                <Button Width="120"
+                        Height="38"
+                        Margin="0,0,10,0"
+                        Content="Export CSV"
+                        Command="{Binding ExportCsvCommand}"/>
+
+                <Button Width="110"
+                        Height="38"
+                        Content="Delete"
+                        Command="{Binding DeleteCommand}"/>
+
+                <Button Width="130"
+        Height="38"
+        Margin="0,0,10,0"
+        Content="Export all JSON"
+        Command="{Binding ExportAllJsonCommand}"
+        Style="{StaticResource SecondaryButtonStyle}"/>
+
+<Button Width="130"
+        Height="38"
+        Margin="0,0,10,0"
+        Content="Export all CSV"
+        Command="{Binding ExportAllCsvCommand}"
+        Style="{StaticResource SecondaryButtonStyle}"/>
+
+            </StackPanel>
+        </Border>
+
+                <!-- Export privacy -->
+
+        <Border Grid.Row="2"
+                Margin="0,12,0,0"
+                Padding="16"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0"
+                            VerticalAlignment="Center">
+
+                    <TextBlock Text="Export privacy"
+                               Style="{StaticResource SectionTitleTextStyle}"/>
+
+                    <TextBlock Margin="0,4,0,0"
+                               Text="Choose which potentially identifying details are removed from exported files."
+                               Style="{StaticResource PageSubtitleTextStyle}"/>
+                </StackPanel>
+
+                <WrapPanel Grid.Column="2"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center">
+
+                    <CheckBox Margin="0,0,24,0"
+                              VerticalAlignment="Center"
+                              Content="Anonymize result names"
+                              IsChecked="{Binding AnonymizeResultNames,
+                                                  Mode=TwoWay,
+                                                  UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <CheckBox Margin="0,0,24,0"
+                              VerticalAlignment="Center"
+                              Content="Exclude exact timestamps"
+                              IsChecked="{Binding ExcludeExactTimestamps,
+                                                  Mode=TwoWay,
+                                                  UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <CheckBox VerticalAlignment="Center"
+                              Content="Exclude warnings"
+                              IsChecked="{Binding ExcludeWarnings,
+                                                  Mode=TwoWay,
+                                                  UpdateSourceTrigger=PropertyChanged}"/>
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main content -->
+
+        <Grid Grid.Row="3"
+              Margin="0,24,0,0">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Results table -->
+
+            <Border Grid.Column="0"
+                    Padding="16"
+                    Background="#F7F8FA"
+                    BorderBrush="#E4E8EE"
+                    BorderThickness="1"
+                    CornerRadius="8">
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Benchmark history"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#1E2430"/>
+
+                    <DataGrid Grid.Row="1"
+                              Margin="0,16,0,0"
+                              ItemsSource="{Binding Results}"
+                              SelectedItem="{Binding SelectedResult}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              SelectionMode="Single"
+                              SelectionUnit="FullRow"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal">
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Created"
+                                                Width="150"
+                                                Binding="{Binding CreatedAt}"/>
+
+                            <DataGridTextColumn Header="Game period"
+                                                Width="*"
+                                                Binding="{Binding GamePeriod}"/>
+
+                            <DataGridTextColumn Header="Duration"
+                                                Width="100"
+                                                Binding="{Binding Duration}"/>
+
+                            <DataGridTextColumn Header="Months"
+                                                Width="80"
+                                                Binding="{Binding MeasurementCount}"/>
+
+                            <DataGridTextColumn Header="Score"
+                                                Width="90"
+                                                Binding="{Binding Score}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <!-- Selected result details -->
+
+            <Border Grid.Column="2"
+                    Padding="20"
+                    Background="#26344A"
+                    CornerRadius="8">
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+
+                        <TextBlock Text="Result details"
+                                   FontSize="20"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+
+                        <TextBlock Margin="0,12,0,0"
+                                   Text="Select a benchmark result to inspect its statistics."
+                                   Foreground="#C8D0DC"
+                                   TextWrapping="Wrap"/>
+
+                        <Separator Margin="0,18,0,18"
+                                   Background="#526179"/>
+
+                        <TextBlock Text="Score"
+                                   Foreground="#AEB8C8"/>
+
+                        <TextBlock Margin="0,4,0,18"
+                                   Text="{Binding SelectedResult.Score,
+                                          TargetNullValue=—}"
+                                   FontSize="30"
+                                   FontWeight="Bold"
+                                   Foreground="White"/>
+
+                        <TextBlock Text="Game period"
+                                   Foreground="#AEB8C8"/>
+
+                        <TextBlock Margin="0,4,0,14"
+                                   Text="{Binding SelectedResult.GamePeriod,
+                                          TargetNullValue=—}"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"
+                                   TextWrapping="Wrap"/>
+
+                        <TextBlock Text="Average month"
+                                   Foreground="#AEB8C8"/>
+
+                        <TextBlock Margin="0,4,0,14"
+                                   Text="{Binding SelectedResult.AverageMonthTime,
+                                          TargetNullValue=—}"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+
+                        <TextBlock Text="Median month"
+                                   Foreground="#AEB8C8"/>
+
+                        <TextBlock Margin="0,4,0,14"
+                                   Text="{Binding SelectedResult.MedianMonthTime,
+                                          TargetNullValue=—}"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+
+                        <TextBlock Text="Fastest month"
+                                   Foreground="#AEB8C8"/>
+
+                        <TextBlock Margin="0,4,0,14"
+                                   Text="{Binding SelectedResult.FastestMonthTime,
+                                          TargetNullValue=—}"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+
+                        <TextBlock Text="Slowest month"
+                                   Foreground="#AEB8C8"/>
+
+                        <TextBlock Margin="0,4,0,14"
+                                   Text="{Binding SelectedResult.SlowestMonthTime,
+                                          TargetNullValue=—}"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+
+                        <TextBlock Text="Standard deviation"
+                                   Foreground="#AEB8C8"/>
+
+                        <TextBlock Margin="0,4,0,14"
+                                   Text="{Binding SelectedResult.StandardDeviation,
+                                          TargetNullValue=—}"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+
+                        <TextBlock Text="Measurements"
+                                   Foreground="#AEB8C8"/>
+
+                        <TextBlock Margin="0,4,0,0"
+                                   Text="{Binding SelectedResult.MeasurementCount,
+                                          TargetNullValue=—}"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Status -->
+
+       <Border Grid.Row="4"
+        Margin="0,24,0,0"
+        Padding="20"
+        Background="{StaticResource SurfaceBrush}"
+        BorderBrush="{StaticResource BorderBrush}"
+        BorderThickness="1"
+        CornerRadius="8">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock
+                Text="Monthly performance"
+                Style="{StaticResource SectionTitleTextStyle}"/>
+
+            <TextBlock
+                Margin="0,6,0,0"
+                Text="Time required to process each measured in-game month."
+                Style="{StaticResource PageSubtitleTextStyle}"/>
+        </StackPanel>
+
+        <Grid Grid.Row="1"
+              Margin="0,18,0,0">
+
+            <TextBlock
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Text="Select a benchmark result with measurement data."
+                Foreground="{StaticResource SecondaryTextBrush}">
+
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter
+                            Property="Visibility"
+                            Value="Visible"/>
+
+                        <Style.Triggers>
+                            <DataTrigger
+                                Binding="{Binding HasSelectedResult}"
+                                Value="True">
+
+                                <Setter
+                                    Property="Visibility"
+                                    Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <lvc:CartesianChart
+    Series="{Binding MonthlySeries}"
+    XAxes="{Binding MonthlyXAxes}"
+    YAxes="{Binding MonthlyYAxes}"
+                LegendPosition="Top"
+                ZoomMode="X">
+
+                <lvc:CartesianChart.Style>
+                    <Style TargetType="lvc:CartesianChart">
+                        <Setter
+                            Property="Visibility"
+                            Value="Collapsed"/>
+
+                        <Style.Triggers>
+                            <DataTrigger
+                                Binding="{Binding HasSelectedResult}"
+                                Value="True">
+
+                                <Setter
+                                    Property="Visibility"
+                                    Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </lvc:CartesianChart.Style>
+            </lvc:CartesianChart>
+        </Grid>
+    </Grid>
+</Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,26 @@
+﻿<Application x:Class="HOI4Benchmark.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewModels="clr-namespace:HOI4Benchmark.App.ViewModels"
+             xmlns:views="clr-namespace:HOI4Benchmark.App.Views">
+
+    <Application.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Colors.xaml"/>
+                <ResourceDictionary Source="Themes/Typography.xaml"/>
+                <ResourceDictionary Source="Themes/Controls.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter
+                x:Key="BooleanToVisibilityConverter"/>
+
+            <DataTemplate
+                DataType="{x:Type viewModels:CompareResultsViewModel}">
+                <views:CompareResultsView/>
+            </DataTemplate>
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
