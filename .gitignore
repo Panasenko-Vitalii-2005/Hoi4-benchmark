@@ -36,3 +36,5 @@ Thumbs.db
 # Application local data
 appsettings.Development.json
 *.local.json
+
+artifacts/
