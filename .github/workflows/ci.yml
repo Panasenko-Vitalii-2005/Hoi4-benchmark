@@ -36,17 +36,17 @@ jobs:
         run: dotnet --info
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore HOI4Benchmark.sln
 
       - name: Build solution
         run: >
-          dotnet build
+          dotnet build HOI4Benchmark.sln
           --configuration Release
           --no-restore
 
       - name: Run tests
         run: >
-          dotnet test
+          dotnet test HOI4Benchmark.sln
           --configuration Release
           --no-build
           --logger "trx;LogFileName=test-results.trx"
