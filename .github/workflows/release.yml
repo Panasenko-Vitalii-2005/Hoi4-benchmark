@@ -60,6 +60,11 @@ jobs:
             --no-build `
             --logger "trx;LogFileName=release-test-results.trx" `
             --results-directory TestResults
+      - name: Restore Windows x64 publish dependencies
+        shell: pwsh
+        run: |
+          dotnet restore $env:APP_PROJECT_PATH `
+            --runtime $env:RUNTIME_IDENTIFIER
 
       - name: Publish Windows x64 application
         shell: pwsh
