@@ -10,6 +10,9 @@ The application already includes a WPF desktop interface, benchmark session mana
 
 The project uses Clean Architecture and MVVM to keep the application maintainable and testable. The current implementation includes the domain model, application services, infrastructure persistence, WPF presentation layer, automated tests, export tooling, logging, and diagnostics.
 
+![CI](https://github.com/<user>/Hoi4-benchmark/actions/workflows/ci.yml/badge.svg)
+![Release](https://github.com/<user>/Hoi4-benchmark/actions/workflows/release.yml/badge.svg)
+
 ## Technology stack
 
 - C#
@@ -19,6 +22,130 @@ The project uses Clean Architecture and MVVM to keep the application maintainabl
 - JSON
 - CSV
 - Git
+
+## Requirements
+
+Before running the application, ensure the following software is installed:
+
+- Windows 10 or Windows 11 (64-bit)
+- Hearts of Iron IV
+- .NET 9 SDK (development only)
+- Git (optional)
+
+For end users downloading a published release, no .NET installation is required because release builds are distributed as self-contained Windows x64 packages.
+
+---
+
+## Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/<your-account>/Hoi4-benchmark.git
+cd Hoi4-benchmark
+```
+
+Restore dependencies:
+
+```bash
+dotnet restore HOI4Benchmark.sln
+```
+
+Build the solution:
+
+```bash
+dotnet build HOI4Benchmark.sln
+```
+
+Run the application:
+
+```bash
+dotnet run --project src/HOI4Benchmark.App
+```
+
+---
+
+## Running a benchmark
+
+1. Launch Hearts of Iron IV.
+2. Enable monthly autosaves.
+3. Load the benchmark save.
+4. Start the benchmark in the application.
+5. Let the game run at maximum speed.
+6. Wait until the configured end date is reached.
+7. Stop the benchmark.
+8. Review statistics and charts.
+9. Export results if desired.
+
+---
+
+## Exporting results
+
+Benchmark results can be exported as:
+
+- JSON
+- CSV
+
+Privacy options allow:
+
+- anonymizing benchmark names;
+- removing exact timestamps;
+- excluding warning messages.
+
+---
+
+## Diagnostics bundle
+
+If something goes wrong:
+
+1. Open **Settings**.
+2. Click **Create diagnostics bundle**.
+3. A ZIP archive containing logs and diagnostic information will be created.
+
+This bundle can be attached to a GitHub issue.
+
+---
+
+## Logs
+
+Application logs are stored in:
+
+```text
+%LOCALAPPDATA%\HOI4Benchmark\logs
+```
+
+Current log file:
+
+```text
+app.log
+```
+
+---
+
+## Automated quality checks
+
+Every push to GitHub automatically:
+
+- restores dependencies;
+- builds the solution;
+- executes unit tests.
+
+Tagged releases additionally:
+
+- publish a self-contained Windows x64 build;
+- generate SHA-256 checksum files;
+- upload release artifacts.
+
+---
+
+## Project status
+
+Current development stage:
+
+**Phase 7 — Release engineering**
+
+The project is under active development.
+Breaking changes may occur before version 1.0.
 
 ## Architecture
 
@@ -46,6 +173,7 @@ Layer responsibilities and architectural rules are documented in [`docs/architec
 - [`docs/services.md`](docs/services.md) — planned services and interfaces.
 - [`docs/roadmap.md`](docs/roadmap.md) — development phases.
 - [`docs/code-signing.md`](docs/code-signing.md) — Windows release signing and certificate security plan.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution guidelines for developers.
 
 ## Benchmark concept
 
@@ -101,6 +229,11 @@ Calculated statistics:
 
 ## License
 
-License is not selected yet.
+The license will be selected before the first public release.
 
-For an open-source desktop benchmark tool, likely candidates are MIT or GPL-3.0. This decision should be made before the first public release.
+The current candidates are:
+
+- MIT
+- GPL-3.0
+
+The final decision will be made before publishing version 0.1.0.
