@@ -229,11 +229,4 @@ Calculated statistics:
 
 ## License
 
-The license will be selected before the first public release.
-
-The current candidates are:
-
-- MIT
-- GPL-3.0
-
-The final decision will be made before publishing version 0.1.0.
+This project is licensed under the [MIT License](LICENSE).
