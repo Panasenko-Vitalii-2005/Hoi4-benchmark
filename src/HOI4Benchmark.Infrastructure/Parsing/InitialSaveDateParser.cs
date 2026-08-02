@@ -314,7 +314,7 @@ public sealed partial class InitialSaveDateParser
     }
 
     [GeneratedRegex(
-    @"^date\s*=\s*""?(?<year>\d{1,6})\.(?<month>\d{1,2})\.(?<day>\d{1,2})""?\s*$",
+    @"^date\s*=\s*""?(?<year>\d{1,6})\.(?<month>\d{1,2})\.(?<day>\d{1,2})(?:\.(?<hour>\d{1,2}))?""?\s*$",
     RegexOptions.CultureInvariant)]
 private static partial Regex RootDateLineRegex();
 

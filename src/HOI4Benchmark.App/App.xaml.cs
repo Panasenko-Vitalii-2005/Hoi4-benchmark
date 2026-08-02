@@ -116,12 +116,12 @@ public partial class App : System.Windows.Application
         services.AddSingleton<MainWindowViewModel>();
 
         services.AddTransient<DashboardView>();
-        services.AddTransient<BenchmarkView>();
+        services.AddSingleton<BenchmarkView>();
         services.AddTransient<ResultsView>();
         services.AddTransient<SettingsView>();
 
         services.AddTransient<DashboardViewModel>();
-        services.AddTransient<BenchmarkViewModel>();
+        services.AddSingleton<BenchmarkViewModel>();
         services.AddTransient<ResultsViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<CompareResultsViewModel>();

@@ -109,11 +109,11 @@ Goal: prepare first public GitHub release.
 
 Tasks:
 
-- add GitHub Actions CI;
-- add release build pipeline;
-- add code signing plan if needed;
-- add README usage guide;
-- add contributing guide;
-- add issue templates;
+- add GitHub Actions CI - completed;
+- add release build pipeline - completed;
+- add code signing plan if needed - completed;
+- add README usage guide - completed;
+- add contributing guide - completed;
+- add issue templates - completed;
 - create v0.1.0 release.
 

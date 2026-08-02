@@ -4,12 +4,23 @@ using HOI4Benchmark.Application.Abstractions;
 using DomainBenchmarkSession =
     HOI4Benchmark.Domain.Benchmarks.BenchmarkSession;
 using HOI4Benchmark.App.Services;
+using System.IO;
+using HOI4Benchmark.Domain.Game;
+using HOI4Benchmark.Domain.Settings;
+using HOI4Benchmark.Domain.Benchmarks;
 namespace HOI4Benchmark.App.ViewModels;
 
 public sealed class BenchmarkViewModel : ViewModelBase
 {
     private readonly IBenchmarkSessionService _sessionService;
+    private readonly IAutosaveWatcher _autosaveWatcher;
+    private readonly IInitialSaveDateParser _saveDateParser;
+    private readonly ISettingsService _settingsService;
 
+    private DomainBenchmarkSession? _activeSession;
+private GameDate? _previousGameDate;
+private DateTimeOffset? _previousAutosaveDetectedAtUtc;
+private TimeSpan _totalMeasuredTime = TimeSpan.Zero;
     private Guid? _activeSessionId;
     private BenchmarkStatus _status = BenchmarkStatus.Idle;
     private string _autosavePath = string.Empty;
@@ -20,24 +31,39 @@ public sealed class BenchmarkViewModel : ViewModelBase
     private bool _isBusy;
 
     public BenchmarkViewModel(
-        IBenchmarkSessionService sessionService)
-    {
-        _sessionService = sessionService
-            ?? throw new ArgumentNullException(
-                nameof(sessionService));
+    IBenchmarkSessionService sessionService,
+    IAutosaveWatcher autosaveWatcher,
+    IInitialSaveDateParser saveDateParser,
+    ISettingsService settingsService)
+{
+    _sessionService = sessionService
+        ?? throw new ArgumentNullException(
+            nameof(sessionService));
 
-        StartCommand = new RelayCommand(
-            StartBenchmark,
-            CanStartBenchmark);
+    _autosaveWatcher = autosaveWatcher
+        ?? throw new ArgumentNullException(
+            nameof(autosaveWatcher));
 
-        StopCommand = new RelayCommand(
-            StopBenchmark,
-            CanStopBenchmark);
+    _saveDateParser = saveDateParser
+        ?? throw new ArgumentNullException(
+            nameof(saveDateParser));
 
-        ResetCommand = new RelayCommand(
-            Reset,
-            CanReset);
-    }
+    _settingsService = settingsService
+        ?? throw new ArgumentNullException(
+            nameof(settingsService));
+
+    StartCommand = new RelayCommand(
+        StartBenchmark,
+        CanStartBenchmark);
+
+    StopCommand = new RelayCommand(
+        StopBenchmark,
+        CanStopBenchmark);
+
+    ResetCommand = new RelayCommand(
+        Reset,
+        CanReset);
+}
 
     public string Title => "Benchmark";
 
@@ -124,6 +150,162 @@ public sealed class BenchmarkViewModel : ViewModelBase
 
     public RelayCommand ResetCommand { get; }
 
+    private async Task OnAutosaveReadyAsync(
+    string autosavePath,
+    CancellationToken cancellationToken)
+{
+    GameDate gameDate =
+        await _saveDateParser.ParseAsync(
+            autosavePath,
+            cancellationToken);
+
+    DateTimeOffset detectedAtUtc =
+        DateTimeOffset.UtcNow;
+
+    // Первый автосейв — только точка отсчёта.
+    if (!_previousGameDate.HasValue ||
+        !_previousAutosaveDetectedAtUtc.HasValue)
+    {
+        _previousGameDate = gameDate;
+        _previousAutosaveDetectedAtUtc =
+            detectedAtUtc;
+
+        await System.Windows.Application.Current.Dispatcher
+            .InvokeAsync(() =>
+            {
+                CurrentGameDate =
+                    gameDate.ToString();
+
+                Status =
+                    BenchmarkStatus.Running;
+
+                StatusMessage =
+                    $"Initial autosave detected: {gameDate}. " +
+                    "Waiting for the next monthly autosave.";
+            });
+
+        return;
+    }
+
+    // FileSystemWatcher иногда может повторно сообщить
+    // об одном и том же автосейве.
+    if (gameDate == _previousGameDate.Value)
+    {
+        return;
+    }
+
+    GameDate fromDate =
+        _previousGameDate.Value;
+
+    DateTimeOffset measurementStartedAtUtc =
+        _previousAutosaveDetectedAtUtc.Value;
+
+    TimeSpan elapsedTime =
+        detectedAtUtc -
+        measurementStartedAtUtc;
+
+    if (elapsedTime <= TimeSpan.Zero)
+    {
+        return;
+    }
+
+    DomainBenchmarkSession? session =
+        _activeSession;
+
+    if (session is null)
+    {
+        return;
+    }
+
+    int measurementIndex =
+        session.Measurements.Count + 1;
+
+    bool isWarmup =
+        measurementIndex <= session.WarmupMonths;
+
+    IReadOnlyList<string> warnings =
+        gameDate.IsNextMonthAfter(fromDate)
+            ? []
+            :
+            [
+                $"Unexpected date transition: " +
+                $"{fromDate} → {gameDate}."
+            ];
+
+    var measurement =
+        new MonthlyMeasurement(
+            measurementIndex,
+            fromDate,
+            gameDate,
+            elapsedTime,
+            measurementStartedAtUtc,
+            detectedAtUtc,
+            isWarmup,
+            warnings);
+
+    session.AddMeasurement(measurement);
+
+    _previousGameDate = gameDate;
+    _previousAutosaveDetectedAtUtc =
+        detectedAtUtc;
+
+    _totalMeasuredTime += elapsedTime;
+
+    await System.Windows.Application.Current.Dispatcher
+        .InvokeAsync(() =>
+        {
+            CurrentGameDate =
+                gameDate.ToString();
+
+            Status =
+                BenchmarkStatus.Running;
+
+            Measurements.Add(
+                new BenchmarkMeasurementItem
+                {
+                    GameDate =
+                        $"{fromDate} → {gameDate}",
+
+                    Duration =
+                        FormatDuration(elapsedTime),
+
+                    Score =
+                        isWarmup
+                            ? "Warm-up"
+                            : "Measured"
+                });
+
+            MeasurementCount =
+                session.MeasuredMonthCount;
+
+            ElapsedTime =
+                FormatTotalDuration(
+                    _totalMeasuredTime);
+
+            StatusMessage =
+                isWarmup
+                    ? $"Warm-up month {measurementIndex} recorded."
+                    : $"Measurement {session.MeasuredMonthCount} " +
+                      $"recorded: {FormatDuration(elapsedTime)}.";
+        });
+}
+
+private static string FormatDuration(
+    TimeSpan duration)
+{
+    return duration.TotalSeconds.ToString(
+        "0.000",
+        System.Globalization.CultureInfo.InvariantCulture)
+        + " s";
+}
+
+private static string FormatTotalDuration(
+    TimeSpan duration)
+{
+    return duration.ToString(
+        @"hh\:mm\:ss");
+}
+
     private bool CanStartBenchmark()
     {
         return !IsBusy
@@ -153,47 +335,95 @@ public sealed class BenchmarkViewModel : ViewModelBase
     }
 
     private async void StartBenchmark()
-    {
-        try
-        {
-            IsBusy = true;
-            StatusMessage = "Starting benchmark session...";
-
-            string sessionName =
-                $"HOI4 benchmark {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
-
-            DomainBenchmarkSession session =
-                await _sessionService.StartBenchmarkAsync(
-                    sessionName,
-                    targetMeasuredMonths: 12,
-                    warmupMonths: 0);
-
-            _activeSessionId = session.Id;
-
-            Measurements.Clear();
-            MeasurementCount = 0;
-            ElapsedTime = "00:00:00";
-            CurrentGameDate = "Waiting for autosave...";
-
-            Status = BenchmarkStatus.WaitingForAutosave;
-
-            StatusMessage =
-                $"Session started: {session.Name}";
-        }
-        catch (Exception exception)
 {
-    Status = BenchmarkStatus.Failed;
+    try
+    {
+        IsBusy = true;
+        StatusMessage = "Starting benchmark session...";
 
-    StatusMessage =
-        ErrorMessageProvider.GetMessage(
-            "Could not start the benchmark",
-            exception);
-}
-        finally
+        BenchmarkSettings settings =
+            await _settingsService.GetSettingsAsync();
+
+        if (string.IsNullOrWhiteSpace(
+                settings.SavePath))
         {
-            IsBusy = false;
+            throw new DirectoryNotFoundException(
+                "Autosave directory is not configured.");
         }
+
+        string autosaveDirectory =
+            Path.GetFullPath(
+                settings.SavePath.Trim());
+
+        if (!Directory.Exists(
+                autosaveDirectory))
+        {
+            throw new DirectoryNotFoundException(
+                "The configured autosave directory was not found.");
+        }
+
+        string autosavePath =
+            Path.Combine(
+                autosaveDirectory,
+                "autosave_temp.hoi4");
+
+        if (_autosaveWatcher.IsRunning)
+        {
+            await _autosaveWatcher.StopAsync();
+        }
+
+        string sessionName =
+            $"HOI4 benchmark {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+
+        DomainBenchmarkSession session =
+            await _sessionService.StartBenchmarkAsync(
+                sessionName,
+                targetMeasuredMonths:
+                    settings.TargetMeasuredMonths,
+                warmupMonths:
+                    settings.WarmupMonths);
+
+        _activeSessionId = session.Id;
+_activeSession = session;
+
+_previousGameDate = null;
+_previousAutosaveDetectedAtUtc = null;
+_totalMeasuredTime = TimeSpan.Zero;
+
+Measurements.Clear();
+        MeasurementCount = 0;
+        ElapsedTime = "00:00:00";
+        CurrentGameDate = "Waiting for autosave...";
+
+        Status =
+            BenchmarkStatus.WaitingForAutosave;
+
+        await _autosaveWatcher.StartAsync(
+            autosavePath,
+            OnAutosaveReadyAsync);
+
+        StatusMessage =
+            $"Watching autosave file: {autosavePath}";
     }
+    catch (Exception exception)
+    {
+        if (_autosaveWatcher.IsRunning)
+        {
+            await _autosaveWatcher.StopAsync();
+        }
+
+        Status = BenchmarkStatus.Failed;
+
+        StatusMessage =
+            ErrorMessageProvider.GetMessage(
+                "Could not start the benchmark",
+                exception);
+    }
+    finally
+    {
+        IsBusy = false;
+    }
+}
 
     private async void StopBenchmark()
     {
@@ -207,13 +437,20 @@ public sealed class BenchmarkViewModel : ViewModelBase
             IsBusy = true;
             StatusMessage = "Stopping benchmark session...";
 
-            DomainBenchmarkSession session =
-                await _sessionService.StopBenchmarkAsync(
-                    _activeSessionId.Value);
+            await _autosaveWatcher.StopAsync();
 
-            _activeSessionId = null;
+DomainBenchmarkSession session =
+    await _sessionService.StopBenchmarkAsync(
+        _activeSessionId.Value);
 
-            Status = BenchmarkStatus.Cancelled;
+_activeSessionId = null;
+_activeSession = null;
+
+_previousGameDate = null;
+_previousAutosaveDetectedAtUtc = null;
+_totalMeasuredTime = TimeSpan.Zero;
+
+Status = BenchmarkStatus.Cancelled;
             CurrentGameDate = "—";
 
             StatusMessage =
@@ -235,10 +472,15 @@ public sealed class BenchmarkViewModel : ViewModelBase
     }
 
     private void Reset()
-    {
-        _activeSessionId = null;
+{
+    _activeSessionId = null;
+    _activeSession = null;
 
-        Measurements.Clear();
+    _previousGameDate = null;
+    _previousAutosaveDetectedAtUtc = null;
+    _totalMeasuredTime = TimeSpan.Zero;
+
+    Measurements.Clear();
 
         MeasurementCount = 0;
         ElapsedTime = "00:00:00";
