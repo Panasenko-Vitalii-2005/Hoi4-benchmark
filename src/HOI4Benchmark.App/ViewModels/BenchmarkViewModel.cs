@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using HOI4Benchmark.Domain.Statistics;
 using HOI4Benchmark.App.Commands;
 using HOI4Benchmark.Application.Abstractions;
 using DomainBenchmarkSession =
@@ -17,6 +18,8 @@ public sealed class BenchmarkViewModel : ViewModelBase
     private readonly IInitialSaveDateParser _saveDateParser;
     private readonly ISettingsService _settingsService;
 
+    private readonly IResultService _resultService;
+
     private DomainBenchmarkSession? _activeSession;
 private GameDate? _previousGameDate;
 private DateTimeOffset? _previousAutosaveDetectedAtUtc;
@@ -34,7 +37,8 @@ private TimeSpan _totalMeasuredTime = TimeSpan.Zero;
     IBenchmarkSessionService sessionService,
     IAutosaveWatcher autosaveWatcher,
     IInitialSaveDateParser saveDateParser,
-    ISettingsService settingsService)
+    ISettingsService settingsService,
+    IResultService resultService)
 {
     _sessionService = sessionService
         ?? throw new ArgumentNullException(
@@ -48,9 +52,13 @@ private TimeSpan _totalMeasuredTime = TimeSpan.Zero;
         ?? throw new ArgumentNullException(
             nameof(saveDateParser));
 
-    _settingsService = settingsService
-        ?? throw new ArgumentNullException(
-            nameof(settingsService));
+        _settingsService = settingsService
+            ?? throw new ArgumentNullException(
+                nameof(settingsService));
+            
+    _resultService = resultService
+    ?? throw new ArgumentNullException(
+        nameof(resultService));
 
     StartCommand = new RelayCommand(
         StartBenchmark,
@@ -187,8 +195,8 @@ private TimeSpan _totalMeasuredTime = TimeSpan.Zero;
         return;
     }
 
-    // FileSystemWatcher иногда может повторно сообщить
-    // об одном и том же автосейве.
+    // FileSystemWatcher иногда может несколько раз
+    // сообщить об одном и том же автосейве.
     if (gameDate == _previousGameDate.Value)
     {
         return;
@@ -288,22 +296,88 @@ private TimeSpan _totalMeasuredTime = TimeSpan.Zero;
                     : $"Measurement {session.MeasuredMonthCount} " +
                       $"recorded: {FormatDuration(elapsedTime)}.";
         });
+
+    if (session.MeasuredMonthCount <
+        session.TargetMeasuredMonths)
+    {
+        return;
+    }
+
+    BenchmarkResult result =
+        session.Complete(
+            DateTimeOffset.UtcNow);
+
+    await _resultService.SaveResultAsync(
+        result);
+
+    await _autosaveWatcher.StopAsync();
+
+    _activeSessionId = null;
+    _activeSession = null;
+
+    _previousGameDate = null;
+    _previousAutosaveDetectedAtUtc = null;
+
+    await System.Windows.Application.Current.Dispatcher
+        .InvokeAsync(() =>
+        {
+            Status =
+                BenchmarkStatus.Completed;
+
+            StatusMessage =
+                $"Benchmark completed and saved. " +
+                $"{result.Measurements.Count} measurements recorded.";
+
+            RaiseCommandStates();
+        });
 }
 
-private static string FormatDuration(
-    TimeSpan duration)
-{
-    return duration.TotalSeconds.ToString(
-        "0.000",
-        System.Globalization.CultureInfo.InvariantCulture)
-        + " s";
-}
+    private static string FormatDuration(
+        TimeSpan duration)
+    {
+        return duration.TotalSeconds.ToString(
+            "0.000",
+            System.Globalization.CultureInfo.InvariantCulture)
+            + " s";
+    }
 
-private static string FormatTotalDuration(
-    TimeSpan duration)
+    private static string FormatTotalDuration(
+        TimeSpan duration)
+    {
+        return duration.ToString(
+            @"hh\:mm\:ss");
+    }
+
+private async Task<BenchmarkResult> SavePartialResultAsync(
+    DomainBenchmarkSession session)
 {
-    return duration.ToString(
-        @"hh\:mm\:ss");
+    if (session.Measurements.Count == 0)
+    {
+        throw new InvalidOperationException(
+            "A partial benchmark result requires at least one measurement.");
+    }
+
+    var statisticsCalculator =
+        new StatisticsCalculator();
+
+    BenchmarkStatistics statistics =
+        statisticsCalculator.Calculate(
+            session.Measurements);
+
+    var result =
+        new BenchmarkResult(
+            session.Id,
+            $"{session.Name} (partial)",
+            session.StartedAtUtc,
+            DateTimeOffset.UtcNow,
+            session.Measurements
+                .OrderBy(measurement => measurement.Index)
+                .ToArray(),
+            statistics);
+
+    await _resultService.SaveResultAsync(result);
+
+    return result;
 }
 
     private bool CanStartBenchmark()
@@ -439,6 +513,19 @@ Measurements.Clear();
 
             await _autosaveWatcher.StopAsync();
 
+DomainBenchmarkSession? activeSession =
+    _activeSession;
+
+BenchmarkResult? partialResult = null;
+
+if (activeSession is not null &&
+    activeSession.Measurements.Count > 0)
+{
+    partialResult =
+        await SavePartialResultAsync(
+            activeSession);
+}
+
 DomainBenchmarkSession session =
     await _sessionService.StopBenchmarkAsync(
         _activeSessionId.Value);
@@ -454,7 +541,11 @@ Status = BenchmarkStatus.Cancelled;
             CurrentGameDate = "—";
 
             StatusMessage =
-                $"Session stopped with status: {session.Status}.";
+    partialResult is not null
+        ? $"Benchmark stopped. Partial result saved with " +
+          $"{partialResult.Measurements.Count} measurements."
+        : $"Session stopped with status: {session.Status}. " +
+          "No measurements were available to save.";
         }
         catch (Exception exception)
 {

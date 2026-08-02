@@ -436,78 +436,130 @@ StatusMessage = saved
                 measurement.ElapsedTime.TotalSeconds)
             .ToArray();
 
-        string[] labels = measurements
-            .Select(measurement =>
-                measurement.ToDate.ToString())
-            .ToArray();
+        double maximumValue =
+    values.Max();
+
+double yAxisMaximum =
+    maximumValue <= 0
+        ? 1
+        : maximumValue * 1.15;
+
+        int labelStep =
+    measurements.Length switch
+    {
+        <= 18 => 1,
+        <= 36 => 2,
+        <= 72 => 3,
+        _ => 6
+    };
+
+string[] labels = measurements
+    .Select((measurement, index) =>
+        index % labelStep == 0
+            ? $"{measurement.ToDate.Year:D4}-" +
+              $"{measurement.ToDate.Month:D2}"
+            : string.Empty)
+    .ToArray();
 
         var textPaint = new SolidColorPaint(
-            new SKColor(249, 250, 251));
+    new SKColor(31, 41, 55));
 
-        var secondaryTextPaint = new SolidColorPaint(
-            new SKColor(156, 163, 175));
+var secondaryTextPaint = new SolidColorPaint(
+    new SKColor(75, 85, 99));
 
-        var separatorPaint = new SolidColorPaint(
-            new SKColor(55, 65, 81))
+var separatorPaint = new SolidColorPaint(
+    new SKColor(229, 231, 235))
+{
+    StrokeThickness = 1
+};
+
+        SolidColorPaint pointFill =
+    new(new SKColor(59, 130, 246));
+
+SolidColorPaint pointStroke =
+    new(new SKColor(37, 99, 235))
+    {
+        StrokeThickness = 2
+    };
+
+if (values.Length == 1)
+{
+    MonthlySeries =
+    [
+        new ScatterSeries<double>
         {
-            StrokeThickness = 1
-        };
+            Name = "Month time",
+            Values = values,
+            GeometrySize = 16,
+            Fill = pointFill,
+            Stroke = pointStroke,
 
-        MonthlySeries =
-        [
-            new LineSeries<double>
+            YToolTipLabelFormatter = point =>
+                $"{point.Coordinate.PrimaryValue:0.###} s"
+        }
+    ];
+}
+else
+{
+    MonthlySeries =
+    [
+        new LineSeries<double>
         {
             Name = "Month time",
             Values = values,
             Fill = null,
-            GeometrySize = 8,
+            GeometrySize = 10,
             LineSmoothness = 0,
+
             Stroke = new SolidColorPaint(
                 new SKColor(59, 130, 246))
             {
                 StrokeThickness = 3
             },
-            GeometryFill = new SolidColorPaint(
-                new SKColor(59, 130, 246)),
-            GeometryStroke = new SolidColorPaint(
-                new SKColor(37, 99, 235))
-            {
-                StrokeThickness = 2
-            },
-            YToolTipLabelFormatter = point =>
-    $"{point.Coordinate.PrimaryValue:0.###} s"
-        }
-        ];
 
-        MonthlyXAxes =
-        [
-            new Axis
-        {
-            Name = "Game month",
-            Labels = labels,
-            LabelsRotation = 30,
-            TextSize = 12,
-            LabelsPaint = secondaryTextPaint,
-            NamePaint = textPaint,
-            SeparatorsPaint = separatorPaint,
-            MinStep = 1,
-            ForceStepToMin = true
+            GeometryFill = pointFill,
+            GeometryStroke = pointStroke,
+
+            YToolTipLabelFormatter = point =>
+                $"{point.Coordinate.PrimaryValue:0.###} s"
         }
-        ];
+    ];
+}
+        MonthlyXAxes =
+[
+    new Axis
+    {
+        Name = "Game month",
+        Labels = labels,
+        LabelsRotation = 0,
+        TextSize = 11,
+        LabelsPaint = secondaryTextPaint,
+        NamePaint = textPaint,
+        SeparatorsPaint = separatorPaint,
+        MinStep = 1,
+        ForceStepToMin = true,
+
+        // Не даём единственной точке оказаться
+        // прямо на краю области построения.
+        MinLimit = -0.5,
+        MaxLimit = measurements.Length - 0.5
+    }
+];
 
         MonthlyYAxes =
-        [
-            new Axis
-        {
-            Name = "Duration, seconds",
-            TextSize = 12,
-            LabelsPaint = secondaryTextPaint,
-            NamePaint = textPaint,
-            SeparatorsPaint = separatorPaint,
-            Labeler = value => $"{value:0.##} s",
-            MinLimit = 0
-        }
-        ];
+[
+    new Axis
+    {
+        Name = "Duration, seconds",
+        TextSize = 12,
+        LabelsPaint = secondaryTextPaint,
+        NamePaint = textPaint,
+        SeparatorsPaint = separatorPaint,
+        Labeler = value => $"{value:0.##} s",
+        MinLimit = 0,
+        MaxLimit = yAxisMaximum
+    }
+];
     }
 
 private async void ExportAllJson()

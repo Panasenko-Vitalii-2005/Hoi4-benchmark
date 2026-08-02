@@ -181,33 +181,86 @@
     </Style>
 
     <Style
-        x:Key="DefaultComboBoxStyle"
-        TargetType="ComboBox">
+    x:Key="DefaultComboBoxStyle"
+    TargetType="ComboBox">
 
-        <Setter
-            Property="Background"
-            Value="{StaticResource AppBackgroundBrush}" />
+    <Setter
+        Property="Background"
+        Value="{StaticResource AppBackgroundBrush}" />
 
-        <Setter
-            Property="Foreground"
-            Value="{StaticResource PrimaryTextBrush}" />
+    <Setter
+        Property="Foreground"
+        Value="{StaticResource PrimaryTextBrush}" />
 
-        <Setter
-            Property="BorderBrush"
-            Value="{StaticResource BorderBrush}" />
+    <Setter
+        Property="BorderBrush"
+        Value="{StaticResource BorderBrush}" />
 
-        <Setter
-            Property="BorderThickness"
-            Value="1" />
+    <Setter
+        Property="BorderThickness"
+        Value="1" />
 
-        <Setter
-            Property="Padding"
-            Value="8,6" />
+    <Setter
+        Property="Padding"
+        Value="8,6" />
 
-        <Setter
-            Property="FontSize"
-            Value="14" />
-    </Style>
+    <Setter
+        Property="FontSize"
+        Value="14" />
+
+    <Setter Property="ItemContainerStyle">
+        <Setter.Value>
+            <Style TargetType="ComboBoxItem">
+
+                <Setter
+                    Property="Foreground"
+                    Value="#1F2937" />
+
+                <Setter
+                    Property="Background"
+                    Value="White" />
+
+                <Setter
+                    Property="Padding"
+                    Value="8,6" />
+
+                <Setter
+                    Property="HorizontalContentAlignment"
+                    Value="Stretch" />
+
+                <Style.Triggers>
+
+                    <Trigger
+                        Property="IsMouseOver"
+                        Value="True">
+
+                        <Setter
+                            Property="Background"
+                            Value="#E5E7EB" />
+
+                        <Setter
+                            Property="Foreground"
+                            Value="#111827" />
+                    </Trigger>
+
+                    <Trigger
+                        Property="IsSelected"
+                        Value="True">
+
+                        <Setter
+                            Property="Background"
+                            Value="#D1D5DB" />
+
+                        <Setter
+                            Property="Foreground"
+                            Value="#111827" />
+                    </Trigger>
+
+                </Style.Triggers>
+            </Style>
+        </Setter.Value>
+    </Setter>
+</Style>
 
     <Style TargetType="CheckBox">
         <Setter

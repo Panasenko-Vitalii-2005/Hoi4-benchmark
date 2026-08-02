@@ -49,10 +49,18 @@
                         Style="{StaticResource SectionTitleTextStyle}" />
 
                     <ComboBox
-                        ItemsSource="{Binding Results}"
-                        SelectedItem="{Binding SelectedFirstResult}"
-                        DisplayMemberPath="DisplayName"
-                        Style="{StaticResource DefaultComboBoxStyle}" />
+    ItemsSource="{Binding Results}"
+    SelectedItem="{Binding SelectedFirstResult}"
+    Style="{StaticResource DefaultComboBoxStyle}">
+
+    <ComboBox.ItemTemplate>
+        <DataTemplate>
+            <TextBlock
+                Text="{Binding DisplayName}"
+                Foreground="#111827" />
+        </DataTemplate>
+    </ComboBox.ItemTemplate>
+</ComboBox>
                 </StackPanel>
 
                 <TextBlock
@@ -72,10 +80,18 @@
                         Style="{StaticResource SectionTitleTextStyle}" />
 
                     <ComboBox
-                        ItemsSource="{Binding Results}"
-                        SelectedItem="{Binding SelectedSecondResult}"
-                        DisplayMemberPath="DisplayName"
-                        Style="{StaticResource DefaultComboBoxStyle}" />
+    ItemsSource="{Binding Results}"
+    SelectedItem="{Binding SelectedSecondResult}"
+    Style="{StaticResource DefaultComboBoxStyle}">
+
+    <ComboBox.ItemTemplate>
+        <DataTemplate>
+            <TextBlock
+                Text="{Binding DisplayName}"
+                Foreground="#111827" />
+        </DataTemplate>
+    </ComboBox.ItemTemplate>
+</ComboBox>
                 </StackPanel>
             </Grid>
         </Border>
